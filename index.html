@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบสลิปโอนเงินอัตโนมัติ</title>
+    <!-- Tailwind CSS สำหรับจัดหน้าเว็บ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font (Prompt) -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md py-6 px-4 text-center">
+        <h1 class="text-2xl md:text-3xl font-bold">💳 ระบบตรวจสอบสลิปโอนเงิน</h1>
+        <p class="text-sm text-blue-100 mt-1">ตรวจสอบความถูกต้องและคัดกรองสลิปปลอม/สลิปถูกแก้ไข</p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-xl w-full mx-auto p-4 my-6">
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+            
+            <!-- เลือกธนาคาร -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">เลือกธนาคารของสลิป</label>
+                <select id="bankSelector" class="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                    <option value="auto">🔍 ตรวจสอบอัตโนมัติทุกธนาคาร (แนะนำ)</option>
+                    <option value="kbank">🟢 ธนาคารกสิกรไทย (KBank)</option>
+                    <option value="scb">🟣 ธนาคารไทยพาณิชย์ (SCB)</option>
+                    <option value="bbl">🔵 ธนาคารกรุงเทพ (BBL)</option>
+                    <option value="ktb">🩵 ธนาคารกรุงไทย (KTB)</option>
+                    <option value="bay">🟡 ธนาคารกรุงศรีอยุธยา (BAY)</option>
+                </select>
+            </div>
+
+            <!-- อัปโหลดสลิป -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">อัปโหลดรูปภาพสลิป</label>
+                <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-indigo-500 transition cursor-pointer relative bg-slate-50" onclick="document.getElementById('slipImage').click()">
+                    <input type="file" id="slipImage" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <div id="uploadPlaceholder">
+                        <svg class="mx-auto h-12 w-12 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        <p class="text-sm text-slate-600">คลิกเพื่ออัปโหลดสลิป หรือลากไฟล์มาวาง</p>
+                        <p class="text-xs text-slate-400 mt-1">รองรับไฟล์ PNG, JPG</p>
+                    </div>
+                    <img id="imagePreview" class="max-h-64 mx-auto rounded-lg hidden shadow" alt="Preview">
+                </div>
+            </div>
+
+            <!-- ปุ่มตรวจสอบ -->
+            <button onclick="verifySlip()" id="verifyBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200">
+                ตรวจสอบสลิป
+            </button>
+
+            <!-- ผลการตรวจสอบ -->
+            <div id="resultContainer" class="mt-6 hidden border-t pt-6">
+                <h3 class="text-lg font-semibold text-slate-800 mb-3">ผลการตรวจสอบ</h3>
+                <div id="resultBox" class="p-4 rounded-xl text-sm">
+                    <!-- แสดงผลลัพธ์ผ่าน JavaScript -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500">
+        &copy; 2026 Slip Verification System • GitHub Pages Ready
+    </footer>
+
+    <!-- Script ควบคุมการทำงาน -->
+    <script>
+        let uploadedFile = null;
+
+        // เปลี่ยนสีธีมตามธนาคารที่เลือก
+        const bankSelector = document.getElementById('bankSelector');
+        bankSelector.addEventListener('change', function() {
+            const header = document.querySelector('header');
+            const btn = document.getElementById('verifyBtn');
+            
+            switch(this.value) {
+                case 'kbank':
+                    header.className = "bg-emerald-600 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+                case 'scb':
+                    header.className = "bg-purple-900 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-purple-900 hover:bg-purple-800 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+                case 'bbl':
+                    header.className = "bg-blue-900 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+                case 'ktb':
+                    header.className = "bg-sky-500 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+                case 'bay':
+                    header.className = "bg-amber-500 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+                default:
+                    header.className = "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md py-6 px-4 text-center transition-all duration-300";
+                    btn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-xl shadow-lg transition duration-200";
+                    break;
+            }
+        });
+
+        // ฟังก์ชันแสดงตัวอย่างรูปภาพและเก็บไฟล์
+        function previewImage(event) {
+            uploadedFile = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(){
+                const output = document.getElementById('imagePreview');
+                const placeholder = document.getElementById('uploadPlaceholder');
+                output.src = reader.result;
+                output.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(uploadedFile);
+        }
+
+        // ฟังก์ชันตรวจสอบสลิป
+        function verifySlip() {
+            const fileInput = document.getElementById('slipImage');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultBox = document.getElementById('resultBox');
+
+            if (fileInput.files.length === 0) {
+                alert('กรุณาอัปโหลดรูปภาพสลิปก่อนตรวจสอบครับ');
+                return;
+            }
+
+            resultContainer.classList.remove('hidden');
+            resultBox.className = "p-4 rounded-xl text-sm bg-slate-100 text-slate-600 text-center";
+            resultBox.innerHTML = "กำลังตรวจสอบความถูกต้องของสลิปและวิเคราะห์ QR Code...";
+
+            setTimeout(() => {
+                // จำลองเงื่อนไข: หากชื่อไฟล์มีคำว่า "edit", "fake", "draw" หรือสุ่มจำลองเคสสลิปถูกขีดเขียน/ข้อมูลหาย
+                // (ในการใช้งานจริง คุณสามารถเปลี่ยนเงื่อนไขนี้เป็นการตรวจสอบผลลัพธ์ที่ได้จากการสแกน QR Code ผ่าน API จริงได้เลยครับ)
+                const fileName = uploadedFile.name.toLowerCase();
+                
+                // สมมติให้รูปภาพทั่วไปผ่าน แต่ถ้าต้องการทดสอบเคสสลิปปลอม/ขีดเขียน ให้จำลองสถานะเป็น false
+                // หรือกำหนดเงื่อนไขจำลอง เช่น สุ่มให้เจอสลิปไม่ปกติ
+                const isNormalSlip = !(fileName.includes('fake') || fileName.includes('draw') || fileName.includes('edit'));
+
+                if (isNormalSlip) {
+                    // กรณีสลิปจริง / ปกติ (แสดงข้อมูลผู้โอนตามจริงที่คุณต้องการเชื่อมต่อ)
+                    resultBox.className = "p-4 rounded-xl text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-2";
+                    resultBox.innerHTML = `
+                        <div class="flex items-center font-bold text-emerald-700 text-base">
+                            ✅ สลิปถูกต้อง / โอนเงินสำเร็จ
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200">
+                            <div><strong>ผู้โอน:</strong> คุณประพัทธ์ไหทาย (ตัวอย่าง)</div>
+                            <div><strong>ผู้รับ:</strong> ร้านค้าออนไลน์</div>
+                            <div><strong>จำนวนเงิน:</strong> 350.00 บาท</div>
+                            <div><strong>วันที่/เวลา:</strong> 12 ต.ค. 2026 - 19:00 น.</div>
+                            <div class="col-span-2 text-xs text-slate-500 pt-1">Ref. Trans ID: 0123456789ABCDE</div>
+                        </div>
+                    `;
+                } else {
+                    // กรณีสลิปถูกขีดเขียน ข้อมูลหาย หรือปลอมแปลง
+                    resultBox.className = "p-4 rounded-xl text-sm bg-rose-50 border border-rose-200 text-rose-800 space-y-1";
+                    resultBox.innerHTML = `
+                        <div class="font-bold text-rose-700 text-base">❌ สลิปไม่ปกติ / ไม่พบข้อมูลในระบบ</div>
+                        <p class="text-xs text-rose-600 mt-1">ระบบตรวจพบร่องรอยการแก้ไข ข้อมูลบางส่วนถูกลบเลือน หรือ QR Code ไม่สมบูรณ์ กรุณาตรวจสอบสลิปใหม่อีกครั้ง</p>
+                    `;
+                }
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
